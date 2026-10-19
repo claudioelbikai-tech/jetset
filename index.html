@@ -1589,6 +1589,35 @@ safe-buffer/index.js:
     return s;
   }
 
+  /* Fair deal: every starting hand has the same mix (1 money, 2 properties, 2 action or
+     rent cards), roughly the same total value, and the strong cards spread out. Many
+     random deals are tried and the most even one is kept; the rest of the deck stays shuffled. */
+  const POWER = { dealbreaker: 1, jsn: 1, sly: 1, forced: 1 };
+  const QUOTA = { m: 1, p: 2, a: 2 };
+  function kindOf(c) { return c.t === 'money' ? 'm' : (c.t === 'prop' || c.t === 'wild') ? 'p' : 'a'; }
+  function worth(c) { return c.t === 'wild' && c.cs === 'any' ? 3 : c.v; }
+  function fairDeal(deck, n) {
+    let best = null;
+    for (let tries = 0; tries < 300; tries++) {
+      const pool = shuffle(deck);
+      const hands = [];
+      for (let i = 0; i < n; i++) hands.push([]);
+      const taken = new Set();
+      Object.keys(QUOTA).forEach(k => {
+        const want = QUOTA[k] * n;
+        const got = pool.filter(id => kindOf(CARDS[id]) === k).slice(0, want);
+        got.forEach((id, j) => { hands[j % n].push(id); taken.add(id); });
+      });
+      const vals = hands.map(h => h.reduce((a, id) => a + worth(CARDS[id]), 0));
+      const pows = hands.map(h => h.filter(id => POWER[CARDS[id].a]).length);
+      const score = (Math.max.apply(null, vals) - Math.min.apply(null, vals)) + 3 * (Math.max.apply(null, pows) - Math.min.apply(null, pows));
+      if (!best || score < best.score) best = { score, hands, rest: pool.filter(id => !taken.has(id)) };
+      if (best.score <= 1) break;
+    }
+    best.hands.forEach(h => { const s2 = shuffle(h); h.length = 0; h.push.apply(h, s2); });
+    return best;
+  }
+
   function newGame(names, opts) {
     opts = opts || {};
     const n = names.length;
@@ -1603,8 +1632,16 @@ safe-buffer/index.js:
       phase: 'draw', plays: 0, pending: null, winner: null,
       log: [], logN: 0, sid: 1,
     };
-    for (let r = 0; r < 5; r++) {
-      for (let i = 0; i < n; i++) st.players[(st.turn + i) % n].hand.push(st.deck.pop());
+    if (opts.fair === false) {
+      for (let r = 0; r < 5; r++) {
+        for (let i = 0; i < n; i++) st.players[(st.turn + i) % n].hand.push(st.deck.pop());
+      }
+    } else {
+      // Hands are dealt in seat order from the starting player, so who gets which hand is still random.
+      const deal = fairDeal(st.deck, n);
+      deal.hands.forEach((h, i) => { st.players[(st.turn + i) % n].hand = h; });
+      st.deck = deal.rest;
+      st.fair = true;
     }
     addLog(st, { k: 'start', p: st.turn });
     return st;
@@ -1623,7 +1660,7 @@ safe-buffer/index.js:
 
   const API = {
     COLORS, COLOR_ORDER, ACTIONS, CARDS, NO_BUILD,
-    newGame, apply, actor, setRng, clone,
+    newGame, apply, actor, setRng, clone, fairDeal,
     isFull, fullCount, canBe, canBuild, setRent, rentFor, findProp, others, hasJSN,
     payable, total, validPayment, suggestPayment,
     rentChoices, looseProps, fullSets, buildChoices, cardName,
@@ -2115,7 +2152,7 @@ safe-buffer/index.js:
     </section>`;
   }
   function flapText(st, v) {
-    if (st.phase === 'deal') return { main: 'Shuffling', sub: 'Dealing 5 cards each' };
+    if (st.phase === 'deal') return { main: 'Shuffling', sub: st.fair ? 'Fair deal: 5 even cards each' : 'Dealing 5 cards each' };
     if (st.phase === 'over') return { main: st.winner === v ? 'You win' : pname(st, st.winner) + ' wins', sub: 'Three full sets' };
     const a = E.actor(st);
     const mine = st.turn === v;
@@ -3654,6 +3691,7 @@ safe-buffer/index.js:
       <h3>Your turn</h3><ul><li>Draw 2 cards, or 5 if your hand is empty.</li><li>Play up to 3 cards: tap a card for its options, or drag it onto your table, your bank or the board.</li><li>End your turn. If you hold more than 7 cards, discard down to 7.</li></ul>
       <h3>Playing cards</h3><ul><li>Money goes into your bank.</li><li>Properties go on your table. Tap a set to see its cards and rent.</li><li>Wild properties count as either of their colors. On your turn, tap the set they’re in to move them for free.</li><li>Action and rent cards can be played for their effect or banked as money. A banked card is only money from then on.</li></ul>
       <h3>On a computer</h3><ul><li>Double-click a card in your hand to play it.</li><li>D or Space draws, E ends your turn, Esc closes a window.</li><li>The menu lets you turn off drawing automatically, or speed up the animations.</li></ul>
+      <h3>Fair deal</h3><ul><li>Every starting hand has the same mix: 1 money card, 2 properties and 2 action or rent cards.</li><li>The hands are about the same total value, and the strongest cards (Deal Breaker, Just Say No, Sly Deal, Forced Deal) are spread out. Everything you draw after that is random.</li></ul>
       <h3>Paying</h3><ul><li>You pay from your bank and your table, never from your hand.</li><li>No change is given.</li><li>If you can’t cover it, you hand over everything you can.</li><li>Full sets are safe: nobody can make you pay with them, so rent never breaks a set. Only a Deal Breaker can take one.</li><li>Properties you receive go on your table. Money goes to your bank.</li></ul>
       <h3>Rent</h3><ul><li>A two-color Rent card charges every other player for one of its colors. The Wild Rent card charges one player for any color.</li><li>Rent depends on how many cards of that color you have. A house adds $3M and a hotel $4M to a full set.</li><li>Play Double the Rent with a Rent card to double it. Each one counts as a play.</li></ul>
       <h3>Action cards</h3><div class="kv">${acts}</div>
