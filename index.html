@@ -9,7 +9,7 @@
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='5' fill='%2310171D'/%3E%3Cpath fill='%23FFB61E' transform='rotate(45 12 12) scale(.8) translate(3 3)' d='M21.5 15.5v-2l-8-5V3.8a1.5 1.5 0 0 0-3 0v4.7l-8 5v2l8-2.5v5l-2 1.5V22l3.5-1 3.5 1v-1.5l-2-1.5v-5z'/%3E%3C/svg%3E">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <meta name="apple-mobile-web-app-title" content="Jet Set">
-<meta name="description" content="A fast two-player card game of deals, rent and dirty tricks.">
+<meta name="description" content="A fast card game for 2 to 4 players: deals, rent and dirty tricks.">
 <meta property="og:title" content="Jet Set">
 <meta property="og:description" content="Join my table — a fast card game of deals, rent and dirty tricks.">
 <meta property="og:image" content="https://claudioelbikai-tech.github.io/jetset/preview.png">
@@ -243,6 +243,30 @@ button.pill:hover { border-color: var(--ink-soft); }
 .backs i:first-child { margin-left: 0; }
 .piles { display: flex; flex-wrap: wrap; gap: 6px; align-items: flex-start; min-height: 36px; }
 .empty { color: var(--ink-soft); font-size: 13px; padding: 8px 2px; }
+
+/* 3 or 4 players: rivals on one line each, sets as chips */
+.rivals.many { gap: 8px; }
+.zone.compact { padding: 8px 10px; gap: 6px; border-radius: 14px; }
+.zone.compact.is-turn { padding: 7px 9px; }
+.zone.compact .zone-head { flex-wrap: nowrap; gap: 6px; }
+.zone.compact .avatar { width: 26px; height: 26px; font-size: 13px; }
+.zone.compact .avatar.bot svg { width: 14px; height: 14px; }
+.zone.compact .pname { font-size: 15px; max-width: none; flex: 0 1 auto; min-width: 0; }
+.zone.compact .zone-head > :not(.pname):not(.spacer) { flex: none; }
+.zone.compact .turn-tag { font-size: 10px; padding: 3px 5px; }
+.zone.compact .pill { height: 26px; padding: 0 8px; font-size: 13px; gap: 4px; }
+.zone.compact .setpips i { width: 8px; height: 8px; }
+.zone.compact .empty { padding: 0 2px; font-size: 12px; }
+.chips { display: flex; flex-wrap: wrap; gap: 5px; min-height: 0; }
+.chip-btn { padding: 0; border: 0; background: none; border-radius: 8px; transition: transform .15s ease; }
+.chip-btn:hover { transform: translateY(-2px); }
+.chip { position: relative; display: inline-flex; align-items: center; gap: 4px; height: 26px; padding: 0 7px; border-radius: 8px; background: var(--pc); color: var(--pt); font: 800 12px/1 var(--f-label); letter-spacing: .04em; font-variant-numeric: tabular-nums; }
+.chip .ph { width: 13px; height: 13px; flex: none; }
+.chip b { font-weight: 800; display: inline-flex; }
+.chip svg { width: 12px; height: 12px; flex: none; }
+.chip.full { box-shadow: 0 0 0 2px var(--accent), 0 0 10px rgba(255, 182, 30, .45); }
+.chip.burst { animation: burst 1.2s ease; }
+.chip .mark { position: absolute; left: 50%; top: 50%; width: 0; height: 0; }
 
 .pile-btn { padding: 0; border: 0; background: none; border-radius: 9px; transition: transform .15s ease; }
 .pile-btn:hover { transform: translateY(-2px); }
@@ -891,15 +915,15 @@ safe-buffer/index.js:
     return st.turn;
   }
 
-  /* Everything a player can hand over when they owe money: bank cards, properties
-     with a cash value, and buildings. Cards in hand never count. */
+  /* Everything a player can hand over when they owe money: bank cards and properties
+     with a cash value. Full sets are safe (house rule): their cards and buildings never
+     count, so rent can't break a set. Cards in hand never count either. */
   function payable(pl) {
     const out = [];
     pl.bank.forEach(c => out.push({ c, v: CARDS[c].v, w: 'bank' }));
     pl.sets.forEach(s => {
+      if (isFull(s)) return;
       s.cards.forEach(c => { if (CARDS[c].v > 0) out.push({ c, v: CARDS[c].v, w: 'prop', set: s.id }); });
-      if (s.house != null) out.push({ c: s.house, v: CARDS[s.house].v, w: 'bld', set: s.id });
-      if (s.hotel != null) out.push({ c: s.hotel, v: CARDS[s.hotel].v, w: 'bld', set: s.id });
     });
     return out;
   }
@@ -922,14 +946,12 @@ safe-buffer/index.js:
     return sum >= amt && sum - min < amt;
   }
 
-  /* Cheapest way to pay: money first, then loose properties, full sets last. */
+  /* Cheapest way to pay: money first, then properties. */
   function suggestPayment(pl, amt) {
     const assets = payable(pl);
     const all = assets.reduce((s, a) => s + a.v, 0);
     if (all <= amt) return assets.map(a => a.c);
-    const full = {};
-    pl.sets.forEach(s => { if (isFull(s)) full[s.id] = 1; });
-    const pain = a => a.w === 'bank' ? a.v * 10 : a.w === 'bld' ? a.v * 10 + 15 : a.v * 10 + (full[a.set] ? 80 : 30);
+    const pain = a => a.w === 'bank' ? a.v * 10 : a.v * 10 + 30;
     const cap = amt + 10, INF = 1e9, n = assets.length;
     const dp = [];
     for (let i = 0; i <= n; i++) dp.push(new Array(cap + 1).fill(INF));
@@ -1102,7 +1124,7 @@ safe-buffer/index.js:
     });
     normalize(st, a);
     normalize(st, b);
-    addLog(st, { k: 'pay', p: a, to: b, cards: cids.slice(), amt: sum });
+    addLog(st, { k: 'pay', p: a, to: b, cards: cids.slice(), amt: sum, safe: fullCount(A) > 0 });
   }
 
   /* An action only needs a response when it would change something for the target. */
@@ -1799,7 +1821,7 @@ safe-buffer/index.js:
       case 'dealbreaker': return `${N(e.p)} played Deal Breaker on ${P(e.t)} ${region(e.col)} set.`;
       case 'jsn': return `${N(e.p)} said Just Say No!`;
       case 'blocked': return `Just Say No stopped ${P(e.from)} ${KIND[e.kind]} against ${n(e.p)}.`;
-      case 'pay': return e.amt ? `${N(e.p)} paid ${n(e.to)} ${M(e.amt)}: ${e.cards.map(c => chipCard(c, true)).join(' ')}` : `${N(e.p)} had nothing to pay with.`;
+      case 'pay': return e.amt ? `${N(e.p)} paid ${n(e.to)} ${M(e.amt)}: ${e.cards.map(c => chipCard(c, true)).join(' ')}` : `${N(e.p)} had nothing to pay with${e.safe ? ' (full sets are safe)' : ''}.`;
       case 'took': return `${N(e.p)} took ${P(e.t)} ${chipCard(e.c)}.`;
       case 'swapped': return `${N(e.p)} swapped ${chipCard(e.give)} for ${P(e.t)} ${chipCard(e.take)}.`;
       case 'tookset': return `${N(e.p)} took ${P(e.t)} ${region(e.col)} set.`;
@@ -1830,7 +1852,7 @@ safe-buffer/index.js:
   /* ================= app state ================= */
   const ui = {
     screen: 'home', mode: null, sheet: null, sheetKey: '',
-    local: null, disp: null, setupNames: ['', ''], youName: '',
+    local: null, disp: null, setupNames: ['', ''], youName: '', botN: 1,
     muted: !!store.get('jetset:muted'), sel: null, fresh: [], hideOver: false,
     replaying: false, speed: 1, lastFlap: '', botTimer: null,
     reactOpen: false, dragGhost: null,
@@ -1905,21 +1927,24 @@ safe-buffer/index.js:
         ${cont}
         <div class="choice"><button class="btn block big primary" data-act="setup">Play on this phone</button><small>Pass the phone between turns. Your hand stays hidden.</small></div>
         <div class="choice"><button class="btn block big" data-act="online">Play online</button><small>Each player on their own phone, live.</small></div>
-        <div class="choice"><button class="btn block big ghost" data-act="bot-setup">Practice against the computer</button><small>Learn the cards against Captain, the house player.</small></div>
+        <div class="choice"><button class="btn block big ghost" data-act="bot-setup">Practice against the computer</button><small>You against 1 to 3 computer players.</small></div>
       </div>
       ${scoresHTML()}
       <div class="home-foot"><button class="linkbtn" data-act="rules">How to play</button></div>
       ${departuresHTML()}
     </div></main>`;
   }
+  const BOT_NAMES = ['Captain', 'Ace', 'Nova'];
+  const isBotSeat = p => ui.mode === 'bot' && !!ui.local && (ui.local.bots || []).indexOf(p) >= 0;
   function setupHTML() {
     if (ui.screen === 'bot-setup') {
       return `<main class="wrap"><div class="stack narrow">
         <div><button class="linkbtn" data-act="home">← Back</button></div>
         <h1 class="screen-title">Practice round</h1>
-        <p class="lede">You against Captain. Captain plays by the same rules and never peeks at your hand.</p>
+        <p class="lede">You against up to 3 computer players. They play by the same rules and never peek at your hand.</p>
         <div class="panel"><div class="field"><span class="avatar" style="--pc:var(--seat-0)">1</span><input id="you-name" data-bind="you" value="${esc(ui.youName)}" placeholder="Your name" maxlength="16" autocomplete="off" aria-label="Your name"></div>
-        <div class="field"><span class="avatar bot" style="--pc:var(--seat-1)">${ICON.plane}</span><span class="fixed-name">Captain</span></div></div>
+        ${BOT_NAMES.slice(0, ui.botN).map((n, i) => `<div class="field"><span class="avatar bot" style="--pc:var(--seat-${i + 1})">${ICON.plane}</span><span class="fixed-name">${n}</span>${i >= 1 ? `<button class="iconbtn" data-act="remove-bot" aria-label="Remove ${n}">×</button>` : ''}</div>`).join('')}
+        ${ui.botN < 3 ? '<button class="btn ghost" data-act="add-bot">Add a computer</button>' : ''}</div>
         <button class="btn block big primary" data-act="start-bot">Deal the cards</button>
       </div></main>`;
     }
@@ -1982,7 +2007,7 @@ safe-buffer/index.js:
     let actions;
     if (me >= 0) {
       actions = d.seats.length >= 2
-        ? '<button class="btn block big primary" data-act="deal-online">Deal the cards</button><p class="note">Anyone seated can deal. Up to 4 players can join before the deal.</p>'
+        ? '<button class="btn block big primary" data-act="deal-online">Deal the cards</button><p class="note">Anyone seated can deal. Up to 4 players can join before the deal: send the link to a third or fourth player and wait for them to sit down.</p>' + (d.seats.length < 4 ? shareBoxHTML() : '')
         : '<div class="callout waiting"><span class="dots" aria-hidden="true"><i></i><i></i><i></i></span>Waiting for someone to join. Send them ' + (window.JETSET_STANDALONE ? 'the link below.' : 'this page.') + '</div>' + shareBoxHTML();
       actions += '<div><button class="linkbtn" data-act="close-table">Close the table</button></div>';
     } else if (d.seats.length < 4) {
@@ -2020,30 +2045,38 @@ safe-buffer/index.js:
       <span class="pile-foot">Rent ${M(E.setRent(s))}<span class="spacer"></span>${bld}</span>
     </span>`;
   }
-  function zoneHTML(st, p, mine) {
+  /* With 3 or 4 players the rivals shrink to one line and a row of set chips, so the whole
+     table still fits on a phone. Tapping a chip opens the set. */
+  function chipHTML(p, s) {
+    const info = COLORS[s.c], full = E.isFull(s);
+    const marks = s.cards.concat(s.house != null ? [s.house] : [], s.hotel != null ? [s.hotel] : []).map(c => `<i class="mark" data-cid="${c}"></i>`).join('');
+    const bld = (s.house != null ? ICON.house : '') + (s.hotel != null ? ICON.hotel : '');
+    return `<button class="chip-btn" data-act="pile" data-p="${p}" data-set="${s.id}" aria-label="${info.region} set, ${s.cards.length} of ${info.size}"><span class="chip ${full ? 'full' : ''}" style="${cv(s.c)}" data-pile="${p}:${s.c}">${regionIcon(s.c, 'ph')}<b>${full ? ICON.check : s.cards.length + '/' + info.size}</b>${bld}${marks}</span></button>`;
+  }
+  function zoneHTML(st, p, mine, compact) {
     const pl = st.players[p];
     const active = st.phase !== 'over' && st.phase !== 'deal' && st.turn === p;
     const acting = st.phase !== 'over' && st.phase !== 'deal' && E.actor(st) === p && !mine;
     const bank = bankOf(pl);
     const full = E.fullCount(pl);
-    const isBot = ui.mode === 'bot' && ui.local && p === ui.local.bot;
-    const backs = mine ? '' : `<span class="pill handpill" data-anchor="hand-${p}" aria-label="${pl.hand.length} cards in hand"><span class="backs">${pl.hand.slice(0, 7).map(c => `<i data-cid="${c}"></i>`).join('')}</span>${pl.hand.length}</span>`;
+    const isBot = isBotSeat(p);
+    const backs = mine ? '' : `<span class="pill handpill" data-anchor="hand-${p}" aria-label="${pl.hand.length} cards in hand"><span class="backs">${pl.hand.slice(0, compact ? 3 : 7).map(c => `<i data-cid="${c}"></i>`).join('')}</span>${pl.hand.length}</span>`;
     const piles = pl.sets.length
-      ? pl.sets.map(s => `<button class="pile-btn" data-act="pile" data-p="${p}" data-set="${s.id}" aria-label="${COLORS[s.c].region} set, ${s.cards.length} of ${COLORS[s.c].size}">${pileHTML(p, s)}</button>`).join('')
+      ? pl.sets.map(s => compact ? chipHTML(p, s) : `<button class="pile-btn" data-act="pile" data-p="${p}" data-set="${s.id}" aria-label="${COLORS[s.c].region} set, ${s.cards.length} of ${COLORS[s.c].size}">${pileHTML(p, s)}</button>`).join('')
       : `<p class="empty">${mine ? 'Your properties land here. Drag a card up, or tap it.' : 'No properties yet.'}</p>`;
     const avatar = isBot ? `<span class="avatar bot" style="--pc:var(--seat-${p % 4})">${ICON.plane}</span>` : `<span class="avatar" style="--pc:var(--seat-${p % 4})">${esc(pname(st, p).charAt(0).toUpperCase())}</span>`;
-    return `<section class="zone ${mine ? 'mine' : 'rival'} ${active ? 'is-turn' : ''}" data-anchor="zone-${p}" ${mine ? 'data-drop="table"' : ''} aria-label="${mine ? 'Your table' : esc(pname(st, p)) + '’s table'}">
+    return `<section class="zone ${mine ? 'mine' : 'rival'} ${compact ? 'compact' : ''} ${active ? 'is-turn' : ''}" data-anchor="zone-${p}" ${mine ? 'data-drop="table"' : ''} aria-label="${mine ? 'Your table' : esc(pname(st, p)) + '’s table'}">
       <div class="zone-head">
         <span data-avatar="${p}">${avatar}</span>
         <span class="pname">${mine ? 'You' : esc(pname(st, p))}</span>
-        ${active ? '<span class="turn-tag">Turn</span>' : ''}
+        ${active && !compact ? '<span class="turn-tag">Turn</span>' : ''}
         ${acting ? '<span class="dots" aria-label="Thinking"><i></i><i></i><i></i></span>' : ''}
         ${backs}
         <span class="spacer"></span>
         <span class="setpips" aria-label="${full} of 3 full sets">${[0, 1, 2].map(i => `<i class="${i < full ? 'on' : ''}"></i>`).join('')}</span>
         <button class="pill bankpill" data-act="bank" data-p="${p}" data-bank="${bank}" data-anchor="bank-${p}" ${mine ? 'data-drop="bank"' : ''} aria-label="${mine ? 'Your' : esc(pname(st, p)) + '’s'} bank: ${M(bank)}">${ICON.bank}<span class="bank-num">${M(bank)}</span></button>
       </div>
-      <div class="piles">${piles}</div>
+      ${compact && !pl.sets.length ? '' : `<div class="${compact ? 'chips' : 'piles'}">${piles}</div>`}
     </section>`;
   }
   function flapText(st, v) {
@@ -2209,7 +2242,7 @@ safe-buffer/index.js:
     return `<main class="wrap"><div class="game">
       ${topbarHTML()}
       ${watch}${over}
-      <div class="rivals">${rivals.map(p => zoneHTML(st, p, false)).join('')}</div>
+      <div class="rivals ${rivals.length > 1 ? 'many' : ''}">${rivals.map(p => zoneHTML(st, p, false, rivals.length > 1)).join('')}</div>
       ${stripHTML(st, v)}
       ${v >= 0 ? zoneHTML(st, v, true) : ''}
     </div></main>${v >= 0 ? dockHTML(st, v) : ''}`;
@@ -2877,10 +2910,11 @@ safe-buffer/index.js:
     store.set('jetset:local', { st: ui.local.st, seenStep: ui.local.seenStep, seenN: ui.local.seenN });
   }
   function newLocal(nameList, bot) {
-    const st = E.newGame(nameList, bot ? { first: Math.random() < 0.5 ? 0 : 1 } : undefined);
+    const st = E.newGame(nameList);
     const pre = E.preDeal(st);
     clearTimeout(ui.botTimer); ui.botTimer = null;
-    ui.local = { st, viewer: bot ? 0 : -1, seenStep: nameList.map(() => -2), seenN: nameList.map(() => 0), hist: [pre, st], bot: bot ? 1 : null };
+    // Practice: you sit in seat 0 and every other seat is a computer player.
+    ui.local = { st, viewer: bot ? 0 : -1, seenStep: nameList.map(() => -2), seenN: nameList.map(() => 0), hist: [pre, st], bots: bot ? nameList.map((_, i) => i).slice(1) : [] };
     ui.mode = bot ? 'bot' : 'local';
     ui.screen = 'game';
     ui.sheet = null; ui.hideOver = false; ui.fresh = []; ui.sel = null; ui.replaying = false;
@@ -2900,7 +2934,7 @@ safe-buffer/index.js:
     if (!saved || !saved.st) return;
     const st = saved.st;
     ui.local = {
-      st, viewer: -1, hist: [st], bot: null,
+      st, viewer: -1, hist: [st], bots: [],
       seenStep: saved.seenStep || st.names.map(() => st.step), seenN: saved.seenN || st.names.map(() => st.logN),
     };
     ui.mode = 'local'; ui.screen = 'game'; ui.sheet = null; ui.hideOver = false; ui.disp = st; ui.replaying = false;
@@ -2951,8 +2985,8 @@ safe-buffer/index.js:
     if (ui.mode !== 'bot' || !ui.local || ui.botTimer) return;
     const st = game();
     if (!st || st.phase === 'over' || shown() !== st) return;
-    const b = ui.local.bot;
-    if (E.actor(st) !== b) return;
+    const b = E.actor(st);
+    if (!isBotSeat(b)) return;
     const d = st.phase === 'draw' ? 700 : st.phase === 'respond' ? 1100 : 950;
     ui.botTimer = setTimeout(async () => {
       ui.botTimer = null;
@@ -3475,9 +3509,11 @@ safe-buffer/index.js:
       const valid = E.validPayment(pl, sel, pd.amt);
       const pick = (cid, extra) => `<button class="pick ${sel.indexOf(cid) >= 0 ? 'on' : ''}" data-act="pick" data-cid="${cid}" ${extra || ''} aria-label="${esc(E.cardName(cid))}">${cardHTML(cid, 'mini')}</button>`;
       const bank = pl.bank.slice().sort((a, b) => C[b].v - C[a].v);
-      const table = pl.sets.map(set => {
-        const cards = set.cards.map(c => pick(c, C[c].v ? '' : 'disabled')).join('') + (set.house != null ? pick(set.house) : '') + (set.hotel != null ? pick(set.hotel) : '');
-        return `<div class="group"><p class="section-label" style="${cv(set.c)}"><i class="sw" style="display:inline-block;margin-right:6px;vertical-align:-1px"></i>${COLORS[set.c].region}${E.isFull(set) ? ' · full set' : ''}</p><div class="picks">${cards}</div></div>`;
+      const loose = pl.sets.filter(set => !E.isFull(set));
+      const safe = pl.sets.filter(set => E.isFull(set)).map(set => COLORS[set.c].region);
+      const table = loose.map(set => {
+        const cards = set.cards.map(c => pick(c, C[c].v ? '' : 'disabled')).join('');
+        return `<div class="group"><p class="section-label" style="${cv(set.c)}"><i class="sw" style="display:inline-block;margin-right:6px;vertical-align:-1px"></i>${COLORS[set.c].region}</p><div class="picks">${cards}</div></div>`;
       }).join('');
       let hint;
       if (sum < pd.amt) hint = `Pick at least ${M(pd.amt)}. No change is given.`;
@@ -3488,7 +3524,8 @@ safe-buffer/index.js:
         title: `Pay ${from} ${M(pd.amt)}`, dismiss: false, cls: 'hot',
         body: `<p>${ask(st, pd)}</p>
           ${bank.length ? `<div class="group"><h3>Your bank</h3><div class="picks">${bank.map(c => pick(c)).join('')}</div></div>` : ''}
-          ${pl.sets.length ? `<div class="group"><h3>Your table</h3>${table}</div>` : ''}
+          ${loose.length ? `<div class="group"><h3>Your table</h3>${table}</div>` : ''}
+          ${safe.length ? `<p class="note">${ICON.check} Your full set${safe.length > 1 ? 's are' : ' is'} safe (${safe.join(', ')}): full sets are never used to pay.</p>` : ''}
           <p class="note">Properties you hand over go to ${from}’s table. Cards in your hand can’t be used.</p>`,
         foot: `<div class="paybar"><span class="sum">${M(sum)} <small>of ${M(pd.amt)}</small></span><span class="hint ${valid ? 'ok' : ''}">${hint}</span></div>
           <div class="meter ${valid ? 'ok' : ''}"><i style="width:${pct}%"></i></div>
@@ -3552,7 +3589,7 @@ safe-buffer/index.js:
       <h3>Goal</h3><p>Be the first to collect three full property sets, each a different color.</p>
       <h3>Your turn</h3><ul><li>Draw 2 cards, or 5 if your hand is empty.</li><li>Play up to 3 cards: tap a card for its options, or drag it onto your table, your bank or the board.</li><li>End your turn. If you hold more than 7 cards, discard down to 7.</li></ul>
       <h3>Playing cards</h3><ul><li>Money goes into your bank.</li><li>Properties go on your table. Tap a set to see its cards and rent.</li><li>Wild properties count as either of their colors. On your turn, tap the set they’re in to move them for free.</li><li>Action and rent cards can be played for their effect or banked as money. A banked card is only money from then on.</li></ul>
-      <h3>Paying</h3><ul><li>You pay from your bank and your table, never from your hand.</li><li>No change is given.</li><li>If you can’t cover it, you hand over everything you have.</li><li>Properties you receive go on your table. Money goes to your bank.</li></ul>
+      <h3>Paying</h3><ul><li>You pay from your bank and your table, never from your hand.</li><li>No change is given.</li><li>If you can’t cover it, you hand over everything you can.</li><li>Full sets are safe: nobody can make you pay with them, so rent never breaks a set. Only a Deal Breaker can take one.</li><li>Properties you receive go on your table. Money goes to your bank.</li></ul>
       <h3>Rent</h3><ul><li>A two-color Rent card charges every other player for one of its colors. The Wild Rent card charges one player for any color.</li><li>Rent depends on how many cards of that color you have. A house adds $3M and a hotel $4M to a full set.</li><li>Play Double the Rent with a Rent card to double it. Each one counts as a play.</li></ul>
       <h3>Action cards</h3><div class="kv">${acts}</div>
       <h3>Destinations</h3>${departuresHTML()}
@@ -3707,7 +3744,9 @@ safe-buffer/index.js:
     'add-player'() { if (ui.setupNames.length < 4) { ui.setupNames.push(''); render(); const el = document.getElementById('setup-name-' + (ui.setupNames.length - 1)); if (el) el.focus(); } },
     'remove-player'(d) { ui.setupNames.splice(+d.i, 1); render(); },
     'start-local'() { newLocal(ui.setupNames.map((n, i) => cleanName(n) || 'Player ' + (i + 1)), false); },
-    'start-bot'() { newLocal([cleanName(ui.youName) || 'You', 'Captain'], true); },
+    'start-bot'() { newLocal([cleanName(ui.youName) || 'You'].concat(BOT_NAMES.slice(0, ui.botN)), true); },
+    'add-bot'() { if (ui.botN < 3) { ui.botN++; sound.play('tap'); render(); } },
+    'remove-bot'() { if (ui.botN > 1) { ui.botN--; render(); } },
     online() { anim.finish(); ui.mode = 'online'; ui.screen = 'online'; ui.sheet = null; ui.disp = game(); render(); connectOnline(); },
     'open-table'() { openTable(); },
     'join-table'() { joinTable(); },
@@ -3867,7 +3906,7 @@ safe-buffer/index.js:
     if (data.setupNames) ui.setupNames = data.setupNames;
     if ((data.mode === 'local' || data.mode === 'bot') && data.local && data.local.st) {
       const L = data.local;
-      ui.local = { st: L.st, viewer: L.viewer != null ? L.viewer : -1, seenStep: L.seenStep || [], seenN: L.seenN || [], bot: L.bot != null ? L.bot : null, hist: [L.st] };
+      ui.local = { st: L.st, viewer: L.viewer != null ? L.viewer : -1, seenStep: L.seenStep || [], seenN: L.seenN || [], bots: L.bots || (L.bot != null ? [L.bot] : []), hist: [L.st] };
       ui.mode = data.mode; ui.screen = 'game'; ui.disp = L.st;
     } else if (data.mode === 'online' || window.JETSET_AUTO_ONLINE) {
       ui.mode = 'online'; ui.screen = 'online';
@@ -3879,7 +3918,7 @@ safe-buffer/index.js:
   const hot = window.claude && window.claude.hot;
   try {
     if (hot && typeof hot.snapshot === 'function') {
-      hot.snapshot(() => ({ mode: ui.mode, screen: ui.screen, local: ui.local ? { st: ui.local.st, viewer: ui.local.viewer, seenStep: ui.local.seenStep, seenN: ui.local.seenN, bot: ui.local.bot } : null, setupNames: ui.setupNames }));
+      hot.snapshot(() => ({ mode: ui.mode, screen: ui.screen, local: ui.local ? { st: ui.local.st, viewer: ui.local.viewer, seenStep: ui.local.seenStep, seenN: ui.local.seenN, bots: ui.local.bots } : null, setupNames: ui.setupNames }));
     }
   } catch (e) { /* optional */ }
   if (hot && typeof hot.ready === 'function') hot.ready(start);
