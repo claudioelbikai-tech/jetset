@@ -214,7 +214,10 @@ button.pill:hover { border-color: var(--ink-soft); }
 @keyframes tagpop { from { transform: scale(.4); opacity: 0; } }
 
 /* ---------- game layout ---------- */
-.game { display: grid; gap: 10px; padding-bottom: calc(var(--dockh) + 16px); }
+.game { display: flex; flex-direction: column; gap: 10px; padding-bottom: calc(var(--dockh) + 16px); min-height: calc(100dvh - 28px - var(--dockh)); }
+.game > * { flex: none; }
+/* Your table takes whatever height is left, so there's no dead gap above your hand. */
+.game > .zone.mine { flex: 1 1 auto; align-content: start; }
 .topbar { position: relative; display: flex; align-items: center; gap: 8px; }
 .topbar .wm { font: 900 22px/1 var(--f-display); letter-spacing: .08em; }
 .topbar .mode { font: 700 12px/1 var(--f-label); letter-spacing: .12em; text-transform: uppercase; color: var(--ink-soft); }
@@ -623,6 +626,37 @@ button.pill:hover { border-color: var(--ink-soft); }
 .share { border-color: var(--accent); }
 .share-url { font: 600 14px/1.4 ui-monospace, "SF Mono", Menlo, Consolas, monospace; word-break: break-all; background: var(--hall); color: var(--ink); padding: 10px 12px; border-radius: 10px; user-select: all; -webkit-user-select: all; }
 .share-code { font: 900 34px/1 var(--f-display); letter-spacing: .08em; text-transform: uppercase; color: var(--ink); user-select: all; -webkit-user-select: all; }
+
+/* ---------- computer and tablet layout ---------- */
+.dock-tip { font: 700 12px/1 var(--f-label); letter-spacing: .08em; text-transform: uppercase; color: var(--ink-soft); opacity: .8; }
+.rivals.cols { grid-template-columns: repeat(var(--cols, 2), minmax(0, 1fr)); align-items: stretch; }
+.rivals.cols-2 { --cols: 2; }
+.rivals.cols-3 { --cols: 3; }
+.rivals.cols .zone .pname { max-width: 10ch; }
+.wrap.wide { max-width: 1240px; }
+.game.desk { gap: 12px; }
+.game.desk .rivals { gap: 12px; }
+.game.desk .rivals .zone { align-content: start; }
+.game.desk .strip { width: min(100%, 900px); margin-inline: auto; }
+.game.desk .deck, .game.desk .discardslot { width: 62px; height: 87px; }
+.game.desk .pile { width: 100px; }
+html.desk .dock > * { max-width: 1208px; }
+html.desk .dock-bar { justify-content: center; gap: 16px; }
+html.desk .dock-bar .spacer { display: none; }
+html.desk .dock-bar .btn { min-width: 170px; }
+html.desk .hand-card:hover { transform: translateX(calc(-50% + var(--fx))) translateY(calc(var(--fy) - 22px)) rotate(var(--fr)); }
+html.desk .hand-card.sel { transform: translateX(calc(-50% + var(--fx))) translateY(calc(var(--fy) - 40px)) rotate(0deg) scale(1.06); }
+html.desk #toasts { left: auto; right: 20px; transform: none; top: 76px; width: 360px; }
+html.desk .hand-card { bottom: 24px; }
+.rivals.cols-3 .zone-head { gap: 6px; }
+@media (max-width: 1100px) {
+  .rivals.cols-3 .avatar { width: 26px; height: 26px; font-size: 13px; }
+  .rivals.cols-3 .pname { font-size: 15px; max-width: 8ch; }
+  .rivals.cols-3 .pill { height: 26px; padding: 0 7px; font-size: 13px; gap: 4px; }
+  .rivals.cols-3 .setpips i { width: 8px; height: 8px; }
+}
+.paygroups { display: flex; flex-wrap: wrap; gap: 4px 18px; align-items: flex-start; }
+.paygroups > .group { min-width: 0; }
 
 </style>
 </head>
@@ -1854,6 +1888,7 @@ safe-buffer/index.js:
     screen: 'home', mode: null, sheet: null, sheetKey: '',
     local: null, disp: null, setupNames: ['', ''], youName: '', botN: 1,
     muted: !!store.get('jetset:muted'), sel: null, fresh: [], hideOver: false,
+    autoDraw: store.get('jetset:autodraw') !== false, fast: store.get('jetset:fast') === true, drawTimer: null, autoDrawKey: '', detailT: null,
     replaying: false, speed: 1, lastFlap: '', botTimer: null,
     reactOpen: false, dragGhost: null,
   };
@@ -2116,23 +2151,28 @@ safe-buffer/index.js:
 
   /* ---------- your hand: an arc you can tap or drag from ---------- */
   const vwidth = () => document.documentElement.clientWidth || innerWidth || 390;
-  const handWidth = () => Math.min(vwidth(), 860) - 32;
+  /* wide: tablets and up, rivals sit side by side. desk: a computer window, the table spreads out. */
+  const isWide = () => vwidth() >= 720;
+  const isDesk = () => vwidth() >= 980 && (window.innerHeight || 800) >= 560;
+  const handWidth = () => Math.min(vwidth(), isDesk() ? 1240 : 860) - 32;
   const handCardW = () => {
-    if (vwidth() >= 720) return 104;
     const h = window.innerHeight || 800;
+    if (isDesk()) return Math.max(100, Math.min(140, Math.round((h - 440) / 2.9)));
+    if (isWide()) return 104;
     return Math.max(80, Math.min(100, Math.round((h - 590) / 1.9)));
   };
   /* Cards fan out on an arc; the spread shrinks with hand size so the outer corners stay on screen. */
-  function fanPositions(n, width, cw) {
+  function fanPositions(n, width, cw, flat) {
     const out = [];
     if (!n) return out;
-    const spread = n > 1 ? Math.min(3.5, 26 / (n - 1)) : 0;
+    // On a computer the cards lie almost flat, side by side, so every one is readable.
+    const spread = n > 1 ? Math.min(flat ? 1.6 : 3.5, (flat ? 12 : 26) / (n - 1)) : 0;
     const over = cw * 1.61 * Math.sin((spread * (n - 1) / 2) * Math.PI / 180);
     const avail = Math.max(cw, width - 2 * over);
-    const step = n > 1 ? Math.min(cw * 0.74, (avail - cw) / (n - 1)) : 0;
+    const step = n > 1 ? Math.min(cw * (flat ? 1.08 : 0.74), (avail - cw) / (n - 1)) : 0;
     for (let i = 0; i < n; i++) {
       const k = i - (n - 1) / 2;
-      out.push({ x: k * step, y: Math.min(10, Math.pow(Math.abs(k), 1.5) * 1.8), r: k * spread });
+      out.push({ x: k * step, y: flat ? Math.min(6, Math.abs(k) * Math.abs(k) * 0.5) : Math.min(10, Math.pow(Math.abs(k), 1.5) * 1.8), r: k * spread });
     }
     return out;
   }
@@ -2203,7 +2243,8 @@ safe-buffer/index.js:
     const order = sortHand(pl.hand);
     if (ui.sel != null && order.indexOf(ui.sel) < 0) ui.sel = null;
     const cw = handCardW();
-    const pos = fanPositions(order.length, handWidth(), cw);
+    const desk = isDesk();
+    const pos = fanPositions(order.length, handWidth(), cw, desk);
     const playing = can && st.phase === 'play' && st.plays < 3;
     const cards = order.map((cid, i) => {
       const hint = playing ? hintFor(st, v, cid) : '';
@@ -2211,9 +2252,9 @@ safe-buffer/index.js:
       return `<button class="hand-card ${ui.sel === cid ? 'sel' : ''} ${hint ? 'hint' : ''} ${ui.fresh.indexOf(cid) >= 0 ? 'fresh' : ''}" data-act="card" data-cid="${cid}" data-hcard="${cid}" data-z="${i + 1}" style="--fx:${p.x.toFixed(1)}px;--fy:${p.y.toFixed(1)}px;--fr:${p.r.toFixed(2)}deg;z-index:${ui.sel === cid ? 60 : i + 1}" aria-label="${esc(E.cardName(cid))}${hint ? ', ' + esc(hint) : ''}">${cardHTML(cid, 'hand')}${hint ? `<span class="hint-badge">${esc(hint)}</span>` : ''}</button>`;
     }).join('');
     return `<footer class="dock" id="dock">
-      <div class="dock-bar"><span class="dock-label">Your hand · ${pl.hand.length}</span>${st.turn === v && st.phase === 'play' ? pips(3 - st.plays, 3, (3 - st.plays) + ' plays left') : ''}<span class="spacer"></span>${btn}</div>
+      <div class="dock-bar"><span class="dock-label">Your hand · ${pl.hand.length}</span>${st.turn === v && st.phase === 'play' ? pips(3 - st.plays, 3, (3 - st.plays) + ' plays left') : ''}${desk && can && st.phase === 'play' && st.plays < 3 ? '<span class="dock-tip">Double-click a card to play it</span>' : ''}<span class="spacer"></span>${btn}</div>
       ${quickbarHTML(st, v)}
-      <div class="fan-hand" data-anchor="hand-me" style="--hand-cw:${cw}px;height:${Math.round(cw * 1.4 + 40)}px">${cards || '<p class="empty">No cards in hand. You’ll draw 5 next turn.</p>'}</div>
+      <div class="fan-hand" data-anchor="hand-me" style="--hand-cw:${cw}px;height:${Math.round(cw * 1.4 + (desk ? 54 : 40))}px">${cards || '<p class="empty">No cards in hand. You’ll draw 5 next turn.</p>'}</div>
     </footer>`;
   }
   function topbarHTML() {
@@ -2239,10 +2280,12 @@ safe-buffer/index.js:
       ? '<div class="callout watching">You’re watching this game. <button class="linkbtn" data-act="stop-watch">Pick your seat</button></div>' : '';
     const over = st.phase === 'over' && ui.hideOver
       ? `<div class="callout">${esc(st.winner === v ? 'You won.' : pname(st, st.winner) + ' won.')} <button class="linkbtn" data-act="show-over">Show results</button></div>` : '';
-    return `<main class="wrap"><div class="game">
+    const compact = rivals.length > 1 && !isWide();
+    const cols = isWide() && rivals.length > 1 ? ` cols cols-${Math.min(3, rivals.length)}` : '';
+    return `<main class="wrap ${isDesk() ? 'wide' : ''}"><div class="game ${isDesk() ? 'desk' : ''}">
       ${topbarHTML()}
       ${watch}${over}
-      <div class="rivals ${rivals.length > 1 ? 'many' : ''}">${rivals.map(p => zoneHTML(st, p, false, rivals.length > 1)).join('')}</div>
+      <div class="rivals ${compact ? 'many' : ''}${cols}">${rivals.map(p => zoneHTML(st, p, false, compact)).join('')}</div>
       ${stripHTML(st, v)}
       ${v >= 0 ? zoneHTML(st, v, true) : ''}
     </div></main>${v >= 0 ? dockHTML(st, v) : ''}`;
@@ -2326,6 +2369,7 @@ safe-buffer/index.js:
 
   /* ================= render ================= */
   function setDockHeight() {
+    document.documentElement.classList.toggle('desk', isDesk());
     const dock = $('#dock');
     document.documentElement.style.setProperty('--dockh', (dock ? dock.offsetHeight : 0) + 'px');
   }
@@ -2813,7 +2857,7 @@ safe-buffer/index.js:
     ui.disp = next;
     if (!before) { render(); finishTransition(prev, next, v, g); return; }
     anim.busy = true;
-    ui.speed = opts.speed || 1;
+    ui.speed = (opts.speed || 1) * (ui.fast ? 0.55 : 1);
     render();
     const L0 = locate(prev), L1 = locate(next);
     const beats = planBeats(prev, next, L0, L1);
@@ -2861,6 +2905,23 @@ safe-buffer/index.js:
     }
     document.title = canAct() ? 'Your move · Jet Set' : 'Jet Set';
     scheduleBot();
+    scheduleAutoDraw();
+  }
+  /* Drawing is never a choice, so it happens by itself a moment after your turn starts (menu: Draw automatically). */
+  function scheduleAutoDraw() {
+    if (!ui.autoDraw || ui.drawTimer) return;
+    const st = game();
+    if (!st || st.phase !== 'draw' || !canAct()) return;
+    const key = ui.mode + ':' + st.step + ':' + viewer();
+    if (ui.autoDrawKey === key) return;
+    ui.drawTimer = setTimeout(() => {
+      ui.drawTimer = null;
+      const s2 = game();
+      if (!ui.autoDraw || !s2 || s2.phase !== 'draw' || ui.mode + ':' + s2.step + ':' + viewer() !== key) return;
+      if (!canAct() || anim.busy || ui.sheet) { scheduleAutoDraw(); return; }
+      ui.autoDrawKey = key;
+      act({ t: 'draw' });
+    }, ui.fast ? 450 : 750);
   }
 
   /* ================= playing a move ================= */
@@ -2957,7 +3018,7 @@ safe-buffer/index.js:
     ui.local.seenN[q] = st.logN;
     saveLocal();
     anim.finish();
-    if (i >= hist.length - 1 || reduced()) { ui.disp = st; render(); pruneHist(); return; }
+    if (i >= hist.length - 1 || reduced()) { ui.disp = st; render(); pruneHist(); scheduleAutoDraw(); return; }
     ui.replaying = true;
     ui.disp = hist[i];
     render();
@@ -2970,6 +3031,7 @@ safe-buffer/index.js:
     if (shown() !== game()) { anim.finish(); ui.disp = game(); }
     render();
     pruneHist();
+    scheduleAutoDraw();
   }
   function pruneHist() {
     const L = ui.local;
@@ -2987,7 +3049,7 @@ safe-buffer/index.js:
     if (!st || st.phase === 'over' || shown() !== st) return;
     const b = E.actor(st);
     if (!isBotSeat(b)) return;
-    const d = st.phase === 'draw' ? 700 : st.phase === 'respond' ? 1100 : 950;
+    const d = (st.phase === 'draw' ? 700 : st.phase === 'respond' ? 1100 : 950) * (ui.fast ? 0.5 : 1);
     ui.botTimer = setTimeout(async () => {
       ui.botTimer = null;
       await anim.idle();
@@ -3524,7 +3586,7 @@ safe-buffer/index.js:
         title: `Pay ${from} ${M(pd.amt)}`, dismiss: false, cls: 'hot',
         body: `<p>${ask(st, pd)}</p>
           ${bank.length ? `<div class="group"><h3>Your bank</h3><div class="picks">${bank.map(c => pick(c)).join('')}</div></div>` : ''}
-          ${loose.length ? `<div class="group"><h3>Your table</h3>${table}</div>` : ''}
+          ${loose.length ? `<div class="group"><h3>Your table</h3><div class="paygroups">${table}</div></div>` : ''}
           ${safe.length ? `<p class="note">${ICON.check} Your full set${safe.length > 1 ? 's are' : ' is'} safe (${safe.join(', ')}): full sets are never used to pay.</p>` : ''}
           <p class="note">Properties you hand over go to ${from}’s table. Cards in your hand can’t be used.</p>`,
         foot: `<div class="paybar"><span class="sum">${M(sum)} <small>of ${M(pd.amt)}</small></span><span class="hint ${valid ? 'ok' : ''}">${hint}</span></div>
@@ -3556,6 +3618,8 @@ safe-buffer/index.js:
           ${inGame ? '<button class="btn block" data-act="log">Game log</button>' : ''}
           ${inGame && (ui.mode !== 'online' || online.me >= 0) ? '<button class="btn block" data-act="ask-restart">New game, same players</button>' : ''}
           <button class="btn block" data-act="mute">${ui.muted ? 'Turn sound on' : 'Turn sound off'}</button>
+          <button class="toggle ${ui.autoDraw ? 'on' : ''}" data-act="pref" data-k="autoDraw" aria-pressed="${ui.autoDraw}"><span class="box">${ui.autoDraw ? '✓' : ''}</span><span>Draw automatically at the start of my turn</span></button>
+          <button class="toggle ${ui.fast ? 'on' : ''}" data-act="pref" data-k="fast" aria-pressed="${ui.fast}"><span class="box">${ui.fast ? '✓' : ''}</span><span>Fast animations</span></button>
           <button class="btn block" data-act="home">Back to start${ui.mode === 'local' && inGame ? ' (game is saved)' : ''}</button>
           ${quit}
         </div>`,
@@ -3589,6 +3653,7 @@ safe-buffer/index.js:
       <h3>Goal</h3><p>Be the first to collect three full property sets, each a different color.</p>
       <h3>Your turn</h3><ul><li>Draw 2 cards, or 5 if your hand is empty.</li><li>Play up to 3 cards: tap a card for its options, or drag it onto your table, your bank or the board.</li><li>End your turn. If you hold more than 7 cards, discard down to 7.</li></ul>
       <h3>Playing cards</h3><ul><li>Money goes into your bank.</li><li>Properties go on your table. Tap a set to see its cards and rent.</li><li>Wild properties count as either of their colors. On your turn, tap the set they’re in to move them for free.</li><li>Action and rent cards can be played for their effect or banked as money. A banked card is only money from then on.</li></ul>
+      <h3>On a computer</h3><ul><li>Double-click a card in your hand to play it.</li><li>D or Space draws, E ends your turn, Esc closes a window.</li><li>The menu lets you turn off drawing automatically, or speed up the animations.</li></ul>
       <h3>Paying</h3><ul><li>You pay from your bank and your table, never from your hand.</li><li>No change is given.</li><li>If you can’t cover it, you hand over everything you can.</li><li>Full sets are safe: nobody can make you pay with them, so rent never breaks a set. Only a Deal Breaker can take one.</li><li>Properties you receive go on your table. Money goes to your bank.</li></ul>
       <h3>Rent</h3><ul><li>A two-color Rent card charges every other player for one of its colors. The Wild Rent card charges one player for any color.</li><li>Rent depends on how many cards of that color you have. A house adds $3M and a hotel $4M to a full set.</li><li>Play Double the Rent with a Rent card to double it. Each one counts as a play.</li></ul>
       <h3>Action cards</h3><div class="kv">${acts}</div>
@@ -3759,7 +3824,11 @@ safe-buffer/index.js:
     card(d) {
       if (drag.suppress && Date.now() - drag.suppress < 400) return;
       const cid = +d.cid;
-      if (ui.sel === cid) openSheet({ type: 'card', cid }); else selectCard(cid);
+      if (ui.sel !== cid) { selectCard(cid); return; }
+      // A second click shows the details; on a computer wait a beat in case it's a double-click.
+      clearTimeout(ui.detailT);
+      if (isDesk()) ui.detailT = setTimeout(() => { if (ui.sel === cid) openSheet({ type: 'card', cid }); }, 280);
+      else openSheet({ type: 'card', cid });
     },
     details(d) { openSheet({ type: 'card', cid: +d.cid }); },
     deselect() { if (ui.sel != null) selectCard(ui.sel); },
@@ -3816,7 +3885,15 @@ safe-buffer/index.js:
     restart() { ui.sheet = null; ACTS.again(); },
     quit() { anim.finish(); store.del('jetset:local'); ui.local = null; ui.mode = null; ui.disp = null; ui.screen = 'home'; ui.sheet = null; clearTimeout(ui.botTimer); ui.botTimer = null; render(); },
     'close-table'() { ui.sheet = null; closeTable(); },
-    'close-sheet'() { ui.sheet = null; renderSheet(); },
+    'close-sheet'() { ui.sheet = null; renderSheet(); scheduleAutoDraw(); },
+    pref(d) {
+      const k = d.k;
+      ui[k] = !ui[k];
+      store.set(k === 'fast' ? 'jetset:fast' : 'jetset:autodraw', ui[k]);
+      sound.play('tap');
+      renderSheet();
+      if (k === 'autoDraw') { ui.autoDrawKey = ''; scheduleAutoDraw(); }
+    },
     'view-board'() { ui.hideOver = true; render(); },
     'show-over'() { ui.hideOver = false; render(); },
     again() {
@@ -3875,7 +3952,26 @@ safe-buffer/index.js:
     else if (el.dataset.bind === 'you') ui.youName = el.value;
     else if (el.dataset.bind === 'join-code') online.codeDraft = el.value;
   });
+  /* Double-click a card in your hand to do the obvious thing with it. */
+  document.addEventListener('dblclick', e => {
+    const card = e.target.closest && e.target.closest('.hand-card');
+    if (!card) return;
+    clearTimeout(ui.detailT);
+    const st = game(), v = viewer(), cid = +card.dataset.hcard;
+    if (!st || !canAct() || st.phase !== 'play' || st.plays >= 3) return;
+    const a = quickActions(st, v, cid).find(x => x.primary && !x.disabled);
+    if (!a) { openSheet({ type: 'card', cid }); return; }
+    if (a.o.mv) act(a.o.mv); else if (a.o.sheet) openSheet(a.o.sheet);
+  });
+  /* Keyboard on a computer: D or Space draws, E ends the turn. */
   document.addEventListener('keydown', e => {
+    const tag = e.target && e.target.tagName;
+    if (!e.metaKey && !e.ctrlKey && !e.altKey && tag !== 'INPUT' && tag !== 'TEXTAREA' && !ui.sheet && onGameScreen()) {
+      const k = (e.key || '').toLowerCase();
+      const press = sel => { const b = $('#dock ' + sel); if (b && !b.disabled) { e.preventDefault(); b.click(); } };
+      if (k === 'd' || (k === ' ' && (e.target === document.body || !tag))) press('[data-act="draw"]');
+      else if (k === 'e') press('[data-act="end"]');
+    }
     if (e.key === 'Escape') {
       if (ui.sheet && ['respond', 'discard'].indexOf(ui.sheet.type) < 0) { ui.sheet = null; renderSheet(); }
       else if (ui.sel != null) selectCard(ui.sel);
@@ -3914,6 +4010,7 @@ safe-buffer/index.js:
     render();
     if (ui.mode === 'online') connectOnline();
     scheduleBot();
+    scheduleAutoDraw();
   }
   const hot = window.claude && window.claude.hot;
   try {
