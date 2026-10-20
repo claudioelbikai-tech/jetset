@@ -17,7 +17,7 @@
 <meta name="twitter:card" content="summary_large_image">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;800;900&family=Big+Shoulders+Text:wght@600;700;800&family=Instrument+Sans:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;800;900&family=Big+Shoulders+Text:wght@600;700;800&family=Instrument+Sans:wght@400;500;600;700&family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500;1,600&family=Manrope:wght@500;600;700&display=swap">
 <style>
 :root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
 body{margin:0}img{max-width:100%}[hidden]{display:none!important}
@@ -657,6 +657,235 @@ html.desk .hand-card { bottom: 24px; }
 }
 .paygroups { display: flex; flex-wrap: wrap; gap: 4px 18px; align-items: flex-start; }
 .paygroups > .group { min-width: 0; }
+
+/* ================= "Salon" look: midnight, champagne-gold hairlines, ivory cards, serif italics =================
+   Layered over style.css when <html class="lux">. The classic look stays available from the menu. */
+.card .lm { display: none; }
+html.lux {
+  --hall: #0E1720; --hall-2: #14212C; --zone: rgba(255, 255, 255, .025); --zone-line: rgba(201, 174, 118, .24);
+  --ink: #EEE7D7; --ink-soft: #9AA4AE; --sheet: #121D27; --sheet-line: rgba(201, 174, 118, .22);
+  --board: #0A1219; --board-ink: #E3CC95; --board-ink-2: #B79C66;
+  --accent: #C9AE76; --accent-ink: #13202B; --warn: #E39A8E; --hot: #B8574B; --focus: #E3CC95;
+  --card: #F4EDDE; --card-ink: #1C1B19; --card-soft: #6E6656; --card-line: rgba(142, 118, 70, .38);
+  --shadow: 0 1px 0 rgba(255, 255, 255, .5) inset, 0 6px 16px rgba(0, 0, 0, .45); --shadow-lift: 0 12px 30px rgba(0, 0, 0, .55);
+  --scrim: rgba(4, 8, 12, .66); --sky-line: rgba(201, 174, 118, .11);
+  --gold-l: #E8D6A6; --gold-d: #8E7646; --hair: rgba(201, 174, 118, .3);
+  --c-brown: #8E5B3C;  --t-brown: #FFFFFF;
+  --c-lblue: #6E9FC2;  --t-lblue: #0F1E2A;
+  --c-pink: #B0587A;   --t-pink: #FFFFFF;
+  --c-orange: #C07A3E; --t-orange: #FFFFFF;
+  --c-red: #A33F3F;    --t-red: #FFFFFF;
+  --c-yellow: #B8913A; --t-yellow: #1C1B19;
+  --c-green: #2E7A57;  --t-green: #FFFFFF;
+  --c-dblue: #2F4C8C;  --t-dblue: #FFFFFF;
+  --c-rail: #42464C;   --t-rail: #FFFFFF;
+  --c-util: #6E9C86;   --t-util: #10201A;
+  --m-1: #EFE6CF; --m-2: #EED9D9; --m-3: #DCE7D3; --m-4: #D7E2EC; --m-5: #E2DBEC; --m-10: #EEDCC2;
+  --seat-0: #2F6E78; --seat-1: #8E3E5C; --seat-2: #8E6A2E; --seat-3: #4A5E80;
+  --f-display: "Cormorant Garamond", "Cormorant", Georgia, "Times New Roman", serif;
+  --f-label: "Manrope", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --f-body: "Manrope", system-ui, -apple-system, "Segoe UI", sans-serif;
+  color-scheme: dark;
+}
+html.lux body {
+  background:
+    repeating-linear-gradient(45deg, rgba(255, 255, 255, .012) 0 1px, transparent 1px 7px),
+    radial-gradient(ellipse 130% 80% at 50% 30%, #1B2A36 0%, #111C26 46%, #0A1117 100%) fixed;
+}
+
+/* ---------- type & buttons ---------- */
+html.lux .btn { border-radius: 999px; border-color: var(--hair); background: transparent; color: var(--ink); font-weight: 600; letter-spacing: .05em; }
+html.lux .btn:hover:not(:disabled) { border-color: var(--accent); }
+html.lux .btn.primary { border: 0; color: var(--accent-ink); background: linear-gradient(180deg, #F0E0B6, #C9AE76 70%, #B89A5E); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .6), 0 10px 24px rgba(201, 174, 118, .2); }
+html.lux .btn.dark { background: transparent; color: var(--board-ink); border: 1px solid var(--accent); }
+html.lux .btn.no-btn { border: 0; color: #F6EDE4; background: linear-gradient(180deg, #B4524A, #8C3530); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .25), 0 10px 22px rgba(140, 53, 48, .35); }
+html.lux .btn.danger { color: var(--warn); }
+html.lux .btn.pulse { animation: luxpulse 2.2s ease-in-out infinite; }
+@keyframes luxpulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(201, 174, 118, .45); } 50% { box-shadow: 0 0 0 8px rgba(201, 174, 118, 0); } }
+html.lux .linkbtn { color: var(--board-ink); font-weight: 600; text-decoration-color: rgba(201, 174, 118, .5); }
+html.lux .iconbtn { border-radius: 50%; border-color: var(--hair); background: rgba(255, 255, 255, .02); }
+html.lux .screen-title { font: 500 italic clamp(34px, 9vw, 46px)/1.05 var(--f-display); letter-spacing: 0; text-transform: none; color: var(--ink); }
+html.lux .lede, html.lux .note { color: var(--ink-soft); }
+html.lux .section-label, html.lux .dock-label, html.lux .topbar .mode, html.lux .scores h3, html.lux .recent h3 { font: 600 10.5px/1.2 var(--f-label); letter-spacing: .22em; color: var(--accent); }
+html.lux .topbar .wm { font: 600 13px/1 var(--f-label); letter-spacing: .42em; color: var(--accent); }
+
+/* ---------- split-flap becomes engraved serif ---------- */
+html.lux .tile { width: auto; min-width: .62em; height: 1.15em; background: none; box-shadow: none; color: var(--board-ink); font-family: var(--f-display); font-weight: 600; }
+html.lux .tile::after { display: none; }
+html.lux .flaps { gap: .06em; }
+html.lux .flaps .gap { width: .3em; }
+html.lux .home .flaps { font-size: clamp(44px, 14vw, 78px); letter-spacing: .04em; }
+html.lux .home .tagline { font: 500 italic 19px/1.4 var(--f-display); color: var(--ink-soft); }
+html.lux .flap { background: none; box-shadow: none; border-radius: 0; border-top: 1px solid var(--hair); border-bottom: 1px solid var(--hair); justify-items: center; text-align: center; padding: 12px 6px; }
+html.lux .flap.drop-ok, html.lux .flap.drop-hover { box-shadow: inset 0 0 0 1px var(--accent), 0 0 24px rgba(201, 174, 118, .25); border-radius: 12px; }
+html.lux .fc { background: none; min-width: 0; padding: 0 .015em; font: 600 clamp(24px, 7vw, 32px)/1.05 var(--f-display); letter-spacing: .03em; color: var(--ink); }
+html.lux .fc::after { display: none; }
+html.lux .flap-sub { justify-content: center; font: 600 10px/1.2 var(--f-label); letter-spacing: .22em; color: var(--accent); }
+html.lux .pips i, html.lux .setpips i { width: 7px; height: 7px; border-radius: 0; transform: rotate(45deg); border: 1px solid var(--accent); }
+html.lux .pips i.on, html.lux .setpips i.on { background: var(--accent); border-color: var(--accent); box-shadow: 0 0 6px rgba(201, 174, 118, .55); }
+html.lux .setpips { gap: 6px; }
+
+/* ---------- table zones: open space and hairlines instead of boxes ---------- */
+html.lux .zone { background: none; border: 0; border-bottom: 1px solid var(--hair); border-radius: 0; padding: 10px 2px 14px; }
+html.lux .zone.is-turn { border: 0; border-bottom: 1px solid var(--accent); padding: 10px 2px 14px; animation: none; box-shadow: none;
+  background: radial-gradient(ellipse 70% 120% at 50% 0%, rgba(201, 174, 118, .09), transparent 70%); }
+html.lux .zone.mine { border: 1px solid var(--hair); border-radius: 18px; padding: 12px 12px 14px; background: rgba(255, 255, 255, .02); }
+html.lux .zone.mine.is-turn { border-color: rgba(201, 174, 118, .65); box-shadow: 0 0 30px rgba(201, 174, 118, .1); }
+html.lux .zone.compact { padding: 8px 2px 10px; }
+html.lux .zone.drop-ok { box-shadow: inset 0 0 0 1px rgba(201, 174, 118, .55); }
+html.lux .zone.drop-hover { box-shadow: inset 0 0 0 1px var(--accent), 0 0 30px rgba(201, 174, 118, .3); }
+html.lux .pname { font: 600 22px/1 var(--f-display); letter-spacing: .01em; text-transform: none; }
+html.lux .zone.compact .pname { font-size: 19px; }
+html.lux .avatar { background: radial-gradient(circle at 35% 30%, color-mix(in srgb, var(--pc) 70%, #fff), var(--pc) 55%, color-mix(in srgb, var(--pc) 60%, #000)); font: 500 italic 17px/1 var(--f-display); box-shadow: 0 0 0 2px var(--hall), 0 0 0 3px var(--accent); }
+html.lux .pill { background: transparent; border-color: var(--hair); font: 600 12px/1 var(--f-label); letter-spacing: .04em; color: var(--ink); }
+html.lux .bankpill .bank-num { font: 600 17px/1 var(--f-display); letter-spacing: .01em; }
+html.lux .bankpill svg { color: var(--accent); }
+html.lux .turn-tag { background: none; color: var(--accent); border: 1px solid var(--accent); font: 600 9px/1 var(--f-label); letter-spacing: .2em; padding: 4px 7px; border-radius: 999px; }
+html.lux .backs i { background: var(--board); border-color: var(--accent); }
+html.lux .empty { font: 500 italic 16px/1.3 var(--f-display); color: var(--ink-soft); }
+html.lux .chip { border-radius: 999px; font: 600 11px/1 var(--f-label); letter-spacing: .06em; }
+html.lux .chip.full { box-shadow: 0 0 0 1px var(--accent), 0 0 10px rgba(201, 174, 118, .4); }
+html.lux .chip.plain { background: rgba(255, 255, 255, .06); color: var(--ink); }
+
+/* set piles: ivory index cards */
+html.lux .pile { border: 0; border-radius: 7px; background: linear-gradient(160deg, #F8F2E6, #E9DFCB); box-shadow: 0 1px 0 rgba(255, 255, 255, .5) inset, 0 8px 18px rgba(0, 0, 0, .45); font-family: var(--f-label); }
+html.lux .pile::before { content: ""; position: absolute; inset: 4px; border: 1px solid var(--card-line); border-radius: 4px; pointer-events: none; }
+html.lux .pile.full { box-shadow: 0 0 0 1px var(--accent), 0 0 18px rgba(201, 174, 118, .35), 0 8px 18px rgba(0, 0, 0, .45); }
+html.lux .pile-head { background: none; color: var(--pc); border-top: 3px solid var(--pc); font: 700 8.5px/1.1 var(--f-label); letter-spacing: .16em; padding: 7px 8px 3px; }
+html.lux .pile-head .ph { color: var(--pc); }
+html.lux .prow { border-top: 0; padding: 2px 8px; font: 600 italic 14px/1.1 var(--f-display); text-transform: none; letter-spacing: 0; color: var(--card-ink); }
+html.lux .prow .sw { width: 6px; height: 6px; border-radius: 50%; }
+html.lux .pile-foot { border-top: 1px solid var(--card-line); margin: 3px 6px 0; padding: 4px 2px 7px; font: 600 9px/1 var(--f-label); letter-spacing: .14em; text-transform: uppercase; color: var(--card-soft); }
+html.lux .bld-house { color: #2E7A57; } html.lux .bld-hotel { color: #A33F3F; }
+
+/* deck & discard */
+html.lux .deck-n { background: var(--accent); color: var(--accent-ink); font: 700 11px/1 var(--f-label); border-radius: 999px; padding: 4px 7px; }
+html.lux .slot-empty { border: 1px dashed var(--hair); font: 600 8px/1 var(--f-label); letter-spacing: .18em; }
+
+/* ---------- the hand ---------- */
+html.lux .dock { background: linear-gradient(to top, #0B141B 64%, rgba(11, 20, 27, 0)); }
+html.lux .dock-tip { font: 500 italic 14px/1 var(--f-display); letter-spacing: 0; text-transform: none; color: var(--ink-soft); }
+html.lux .hand-card.sel .card { box-shadow: 0 0 0 1px var(--accent), 0 0 0 4px rgba(201, 174, 118, .18), 0 0 30px rgba(232, 214, 166, .35), var(--shadow-lift); }
+html.lux .hand-card.hint .card { box-shadow: 0 0 0 1px rgba(201, 174, 118, .9), 0 0 16px rgba(201, 174, 118, .35), var(--shadow); }
+html.lux .hint-badge { background: var(--accent); color: var(--accent-ink); font: 600 9px/1 var(--f-label); letter-spacing: .14em; border-radius: 999px; padding: 4px 8px; }
+html.lux .quickbar { background: #0E1720; border: 1px solid var(--hair); border-radius: 999px; padding: 6px; }
+html.lux .qbtn { border-radius: 999px; border-color: var(--hair); background: transparent; color: var(--ink); font: 600 13px/1 var(--f-label); letter-spacing: .03em; }
+html.lux .qbtn.primary { border: 0; color: var(--accent-ink); background: linear-gradient(180deg, #F0E0B6, #C9AE76); }
+html.lux .qnote { color: var(--accent); font: 600 10px/1.2 var(--f-label); letter-spacing: .16em; }
+html.lux .pad { border-radius: 999px; border: 1px dashed var(--hair); background: #0E1720; color: var(--ink-soft); font: 600 11px/1 var(--f-label); letter-spacing: .16em; }
+html.lux .pad.ok { border-color: var(--accent); color: var(--ink); }
+html.lux .pad.drop-hover { background: var(--accent); color: var(--accent-ink); }
+
+/* ---------- cards: ivory, gold frame, serif names, line drawings ---------- */
+html.lux .card { border: 0; background: linear-gradient(160deg, #FBF6EC, #F4EDDE 55%, #E8DDC6); box-shadow: 0 1px 0 rgba(255, 255, 255, .6) inset, 0 8px 20px rgba(0, 0, 0, .45); font-family: var(--f-label); }
+html.lux .card::before { content: ""; position: absolute; inset: .3em; border: 1px solid var(--card-line); border-radius: calc(var(--cw) * .05); pointer-events: none; z-index: 2; }
+html.lux .card .val { background: none; box-shadow: none; min-width: 0; height: auto; padding: 0; top: .55em; right: .6em; font: 600 .95em/1 var(--f-display); color: var(--gold-d); }
+html.lux .card .kind { font: 600 .55em/1.3 var(--f-label); letter-spacing: .18em; color: #7A715F; text-align: center; padding: .3em .6em .9em; }
+html.lux .card .wm { display: none; }
+html.lux .card.prop .band { background: none; color: var(--card-ink); min-height: 0; padding: .7em .7em .2em; }
+html.lux .card .region { font: 700 .56em/1 var(--f-label); letter-spacing: .2em; color: var(--pc); opacity: 1; }
+html.lux .card .city { font: 600 italic 1.36em/1 var(--f-display); text-transform: none; letter-spacing: 0; margin-top: .3em; color: var(--card-ink); }
+html.lux .card .city.long { font-size: 1.18em; }
+html.lux .card .lm { display: block; position: relative; z-index: 1; height: 2.6em; margin: .2em .8em 0; color: var(--pc); }
+html.lux .card .lm svg { width: 100%; height: 100%; fill: none; stroke: currentColor; stroke-width: 1.3; stroke-linecap: round; stroke-linejoin: round; }
+html.lux .ladder { margin: auto .7em .75em; padding: .35em 0 0; border-top: 1px solid var(--card-line); display: flex; justify-content: space-between; gap: .2em; }
+html.lux .ladder li { flex-direction: column; gap: .2em; font: 600 .78em/1 var(--f-display); color: #5B5446; }
+html.lux .ladder li b { width: .5em; height: .5em; border-radius: 50%; font-size: 0; background: var(--pc); }
+html.lux .ladder li span { margin: 0; color: var(--card-ink); font-weight: 600; }
+html.lux .ladder li.full span::after { content: ""; }
+html.lux .card.money { background: repeating-radial-gradient(circle at 50% 46%, rgba(142, 118, 70, .16) 0 1px, transparent 1px 5px), linear-gradient(160deg, color-mix(in srgb, var(--note) 55%, #FBF4E4), color-mix(in srgb, var(--note) 75%, #D9C8A2)); }
+html.lux .card.money .note-face { background: none; border: 0; }
+html.lux .card.money .note-val { font: 600 2.9em/1 var(--f-display); color: #4F4022; }
+html.lux .card.money .note-val.wide { font-size: 2.4em; }
+html.lux .card.money .note-cap { font: 600 .5em/1 var(--f-label); letter-spacing: .22em; color: #7A6A48; }
+html.lux .card.money .note-corner { font: 600 .95em/1 var(--f-display); color: #8E7646; top: .55em; left: .65em; }
+html.lux .card.money .note-corner.b { bottom: .55em; right: .65em; }
+html.lux .stamp { margin-top: 1.9em; width: 5.4em; height: 5.4em; border: 1px solid currentColor; box-shadow: inset 0 0 0 .25em #F6F0E3, inset 0 0 0 calc(.25em + 1px) rgba(142, 118, 70, .45); transform: none; }
+html.lux .stamp span { font: 600 italic 1.08em/1 var(--f-display); text-transform: none; letter-spacing: 0; }
+html.lux .stamp span.long { font-size: .94em; }
+html.lux .a-dealbreaker { --ink-a: #5E3A7E; } html.lux .a-jsn { --ink-a: #9C3B3B; } html.lux .a-sly { --ink-a: #2B6F73; } html.lux .a-forced { --ink-a: #2F4C8C; }
+html.lux .a-debt { --ink-a: #7A5228; } html.lux .a-birthday { --ink-a: #9A4A6E; } html.lux .a-passgo { --ink-a: #2E7A57; } html.lux .a-house { --ink-a: #2E7A57; }
+html.lux .a-hotel { --ink-a: #9C3B3B; } html.lux .a-double { --ink-a: #9A6328; }
+html.lux .rent-disc { margin-top: 1.9em; width: 5.2em; height: 5.2em; box-shadow: 0 0 0 .25em #F6F0E3, 0 0 0 calc(.25em + 1px) rgba(142, 118, 70, .5); }
+html.lux .rent-disc span { font: 600 italic .95em/1 var(--f-display); text-transform: none; letter-spacing: .02em; border-radius: 999px; padding: .25em .55em; }
+html.lux .card.wild .half { min-height: 3.2em; }
+html.lux .card.wild .half .region { color: inherit; }
+html.lux .card.wild .wild-mid { font: 600 italic 1.3em/1 var(--f-display); letter-spacing: 0; text-transform: none; }
+html.lux .card.wild .wild-mid small { font: 600 .42em/1 var(--f-label); letter-spacing: .18em; text-transform: uppercase; }
+html.lux .card.wild.any .any-face { background: #F6F0E3; box-shadow: 0 0 0 1px var(--card-line); }
+html.lux .card.wild.any .any-face b { font: 600 italic 1.35em/1 var(--f-display); letter-spacing: 0; text-transform: none; }
+html.lux .card.back { background: repeating-linear-gradient(45deg, rgba(201, 174, 118, .22) 0 1px, transparent 1px 7px), repeating-linear-gradient(-45deg, rgba(201, 174, 118, .22) 0 1px, transparent 1px 7px), linear-gradient(160deg, #1D2D3B, #0E1821); box-shadow: 0 0 0 1px var(--gold-d), 0 8px 18px rgba(0, 0, 0, .5); }
+html.lux .card.back::before { border-color: var(--accent); }
+html.lux .card.back .mono { border: 1px solid var(--accent); background: #0E1821; font: 600 1.15em/1 var(--f-display); color: var(--gold-l); width: 3.4em; height: 3.4em; }
+html.lux .card.sz-mini .lm, html.lux .card.sz-tiny .lm { height: 1.9em; margin-top: .35em; }
+
+/* ---------- home, setup, lobby ---------- */
+html.lux .departures { background: none; border-top: 1px solid var(--hair); border-radius: 0; box-shadow: none; padding: 14px 2px 0; color: var(--ink); }
+html.lux .departures h3 { font: 600 10px/1 var(--f-label); letter-spacing: .22em; color: var(--accent); }
+html.lux .dep-row { border-top-color: rgba(201, 174, 118, .12); font: 600 italic 17px/1.1 var(--f-display); letter-spacing: 0; text-transform: none; }
+html.lux .dep-row span:nth-child(3), html.lux .dep-row span:nth-child(4) { font: 600 10px/1 var(--f-label); letter-spacing: .12em; text-transform: uppercase; color: var(--ink-soft); }
+html.lux .dep-row i { border-radius: 50%; }
+html.lux .choice small { color: var(--ink-soft); }
+html.lux .scores { background: none; border: 0; border-top: 1px solid var(--hair); border-radius: 0; padding: 14px 0 0; }
+html.lux .score-row b { font: 600 italic 18px/1 var(--f-display); text-transform: none; letter-spacing: 0; }
+html.lux .score-row em { font: 600 28px/1 var(--f-display); color: var(--board-ink); }
+html.lux .panel { background: rgba(255, 255, 255, .025); border-color: var(--hair); border-radius: 18px; }
+html.lux .field input { background: rgba(255, 255, 255, .04); border-color: var(--hair); border-radius: 12px; color: var(--ink); }
+html.lux .fixed-name { font: 600 italic 20px/1 var(--f-display); text-transform: none; letter-spacing: 0; }
+html.lux .seatlist li { background: rgba(255, 255, 255, .03); border: 1px solid var(--hair); border-radius: 999px; font: 600 italic 18px/1 var(--f-display); }
+html.lux .callout { background: rgba(255, 255, 255, .03); border-left-color: var(--accent); }
+html.lux .share-code { font: 600 34px/1 var(--f-display); color: var(--board-ink); }
+html.lux .share-url { background: rgba(255, 255, 255, .04); color: var(--ink); }
+html.lux .spinner { border-color: var(--hair); border-top-color: var(--accent); }
+html.lux .dots i { background: var(--accent); }
+
+/* ---------- sheets, log, rules ---------- */
+html.lux .sheet { background: linear-gradient(180deg, #15222E, #0F1922); border-top: 1px solid var(--hair); }
+html.lux .sheet::before { background: var(--hair); }
+html.lux .sheet.hot { box-shadow: 0 -8px 30px rgba(0, 0, 0, .35), inset 0 2px 0 var(--hot); }
+html.lux .sheet-head h2 { font: 500 italic 28px/1.05 var(--f-display); letter-spacing: 0; text-transform: none; }
+html.lux .sheet-head .x { border-radius: 50%; border-color: var(--hair); }
+html.lux .group h3, html.lux .rules h3 { font: 600 italic 20px/1.1 var(--f-display); letter-spacing: 0; text-transform: none; color: var(--board-ink); }
+html.lux .kv b { font: 600 italic 17px/1.2 var(--f-display); text-transform: none; letter-spacing: 0; }
+html.lux .colorbtn, html.lux .toggle { background: rgba(255, 255, 255, .03); border-color: var(--hair); border-radius: 14px; }
+html.lux .colorbtn b { font: 600 italic 18px/1 var(--f-display); text-transform: none; letter-spacing: 0; }
+html.lux .colorbtn.on, html.lux .toggle.on { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+html.lux .paybar .sum { font: 600 30px/1 var(--f-display); }
+html.lux .meter { background: rgba(255, 255, 255, .06); }
+html.lux .meter.ok i { background: var(--accent); }
+html.lux .pick.on .card { box-shadow: 0 0 0 1px var(--accent), 0 0 18px rgba(201, 174, 118, .35), var(--shadow-lift); }
+html.lux .pick.on::after { background: var(--accent); }
+html.lux .loglist li { border-top-color: rgba(201, 174, 118, .12); }
+
+/* ---------- overlays, toasts, motion ---------- */
+html.lux .toast { background: #13202B; color: var(--ink); border-left: 2px solid var(--accent); border-radius: 14px; box-shadow: 0 14px 34px rgba(0, 0, 0, .45); }
+html.lux .curtain { background: radial-gradient(ellipse at 50% 30%, #1B2A36, #0A1117 72%); }
+html.lux .pass { background: linear-gradient(160deg, #FBF6EC, #EDE3CF); box-shadow: 0 0 0 1px var(--accent), 0 30px 60px rgba(0, 0, 0, .55); }
+html.lux .pass-top { background: #0E1720; font: 600 10px/1 var(--f-label); letter-spacing: .24em; }
+html.lux .pass .eyebrow { font: 600 10px/1 var(--f-label); letter-spacing: .24em; color: var(--gold-d); }
+html.lux .pass .tile { color: #1C1B19; }
+html.lux .curtain-why { font: 500 italic 19px/1.3 var(--f-display); color: #4A4436; }
+html.lux .pass-row b { font: 600 22px/1 var(--f-display); }
+html.lux .win-card { background: radial-gradient(ellipse at 50% 0%, #22313E, #0B131A 70%); box-shadow: 0 0 0 1px var(--hair), 0 30px 70px rgba(0, 0, 0, .55); }
+html.lux .win-card p { color: var(--ink); font: 500 italic 19px/1.35 var(--f-display); }
+html.lux .replay-bar { background: #0E1720; border: 1px solid var(--hair); font: 600 10px/1 var(--f-label); letter-spacing: .2em; }
+html.lux .react-tray { border-radius: 999px; background: #13202B; border-color: var(--hair); }
+html.lux .ring { border-width: 1px; border-color: var(--accent); box-shadow: 0 0 40px rgba(201, 174, 118, .5); }
+html.lux .float-txt { font: 600 26px/1 var(--f-display); color: var(--board-ink); text-shadow: 0 2px 12px rgba(0, 0, 0, .6); }
+html.lux .float-txt.loss { color: #E39A8E; }
+html.lux .ribbon { font: 600 11px/1 var(--f-label); letter-spacing: .14em; box-shadow: 0 0 0 1px var(--accent), 0 10px 24px rgba(0, 0, 0, .4); }
+html.lux .stamp-text { font: 600 italic 58px/1 var(--f-display); text-transform: none; letter-spacing: 0; border-width: 2px; background: rgba(246, 240, 227, .94); }
+html.lux .spot-cap { font: 500 italic 21px/1.35 var(--f-display); color: #F4EDDE; }
+html.lux .spot-scrim { background: radial-gradient(circle at 50% 40%, rgba(6, 10, 14, .4), rgba(6, 10, 14, .8)); }
+
+/* fine-tuning after the first screenshots */
+html.lux .tile { min-width: 0; padding: 0 .015em; }
+html.lux .home .flaps { letter-spacing: 0; gap: .03em; }
+html.lux .home .flaps .gap { width: .32em; }
+html.lux .pile-head { letter-spacing: .1em; gap: 3px; }
+html.lux .pile-head .ph { display: none; }
+html.lux .pile-foot { letter-spacing: .1em; }
+html.lux .dock { background: linear-gradient(to top, #0B141B 84%, rgba(11, 20, 27, 0)); }
 
 </style>
 </head>
@@ -1691,6 +1920,8 @@ safe-buffer/index.js:
     set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { /* private mode */ } },
     del(k) { try { localStorage.removeItem(k); } catch (e) { /* private mode */ } },
   };
+  // The "salon" look (midnight and gold) is the default; the original look stays one tap away in the menu.
+  try { document.documentElement.classList.toggle('lux', store.get('jetset:look') !== 'classic'); } catch (e) { /* no DOM */ }
   const cleanName = s => String(s || '').replace(/\s+/g, ' ').trim().slice(0, 16);
   const vibrate = p => { try { if (navigator.vibrate) navigator.vibrate(p); } catch (e) { /* not allowed here */ } };
   const bankOf = pl => pl.bank.reduce((a, c) => a + C[c].v, 0);
@@ -1797,6 +2028,20 @@ safe-buffer/index.js:
     const r = COLORS[col].rent;
     return `<ol class="ladder">${r.map((x, i) => `<li class="${i === r.length - 1 ? 'full' : ''}"><b>${i + 1}</b><span>${M(x)}</span></li>`).join('')}</ol>`;
   }
+  /* Line drawings of each destination, shown on property cards in the salon look. */
+  const LANDMARK = {
+    brown: '<path d="M6 33 22 9l16 24M30 33l14-20 14 20M22 9l4 24"/>',
+    lblue: '<path d="M8 10 32 3l24 7zM8 10h48v3H8zM14 13v16M22 13v16M30 13v16M38 13v16M46 13v16M6 29h52v3H6z"/>',
+    pink: '<path d="M12 7c13-3 27-3 40 0M15 11h34M20 8v26M44 8v26M18 17h28M30 11v6M34 11v6"/>',
+    orange: '<path d="M16 34V17a16 16 0 0 1 32 0v17M22 34V19a10 10 0 0 1 20 0v15M10 34h44M12 11h40"/>',
+    red: '<path d="M8 31V12q24-8 48 0v19M8 31h48M8 21h48M14 31v-5q2-3 4 0v5M24 31v-5q2-3 4 0v5M36 31v-5q2-3 4 0v5M46 31v-5q2-3 4 0v5M14 18v-3q2-2 4 0v3M24 17v-3q2-2 4 0v3M36 17v-3q2-2 4 0v3M46 18v-3q2-2 4 0v3"/>',
+    yellow: '<path d="M32 32 10 16a28 28 0 0 1 44 0zM32 32 18 9M32 32 26 5M32 32 38 5M32 32 46 9"/>',
+    green: '<path d="M32 3 22 12h6l-9 8h7l-10 8h32l-10-8h7l-9-8h6zM32 28v6"/>',
+    dblue: '<path d="M32 1v5M29.5 6h5M30.5 6 28 17M33.5 6 36 17M26 17h12M27.5 17 22 34M36.5 17 42 34M27 27c3-4 7-4 10 0M20 34h6M38 34h6"/>',
+    rail: '<path d="M22 5h20a4 4 0 0 1 4 4v15a4 4 0 0 1-4 4H22a4 4 0 0 1-4-4V9a4 4 0 0 1 4-4zM18 16h28M25 28l-4 6M39 28l4 6M24 22h.01M40 22h.01"/>',
+    util: '<path d="M32 9v24M25 14h14M16 23a16 11 0 0 0 32 0M16 23l-3 3M48 23l3 3M32 9a3 3 0 1 0 0-.01"/>',
+  };
+  const landmark = col => `<span class="lm" aria-hidden="true"><svg viewBox="0 0 64 36">${LANDMARK[col] || ''}</svg></span>`;
   function cardHTML(cid, size) {
     const c = C[cid];
     const sz = 'sz-' + (size || 'hand');
@@ -1805,7 +2050,7 @@ safe-buffer/index.js:
     }
     if (c.t === 'prop') {
       const info = COLORS[c.c];
-      return `<div class="card prop ${sz}" style="${cv(c.c)}"><div class="band"><span class="region">${info.region}</span><span class="city ${c.name.length > 8 ? 'long' : ''}">${esc(c.name)}</span></div><span class="val">${M(c.v)}</span>${ladderHTML(c.c)}${regionIcon(c.c, 'wm')}</div>`;
+      return `<div class="card prop ${sz}" style="${cv(c.c)}"><div class="band"><span class="region">${info.region}</span><span class="city ${c.name.length > 8 ? 'long' : ''}">${esc(c.name)}</span></div><span class="val">${M(c.v)}</span>${landmark(c.c)}${ladderHTML(c.c)}${regionIcon(c.c, 'wm')}</div>`;
     }
     if (c.t === 'wild') {
       if (c.cs === 'any') return `<div class="card wild any foil ${sz}"><div class="any-face"><b>Wild</b><span>Any color</span><span>No cash value</span></div></div>`;
@@ -2008,6 +2253,7 @@ safe-buffer/index.js:
   }
   const BOT_NAMES = ['Captain', 'Ace', 'Nova'];
   const isBotSeat = p => ui.mode === 'bot' && !!ui.local && (ui.local.bots || []).indexOf(p) >= 0;
+  const classicLook = () => !document.documentElement.classList.contains('lux');
   function setupHTML() {
     if (ui.screen === 'bot-setup') {
       return `<main class="wrap"><div class="stack narrow">
@@ -3657,6 +3903,7 @@ safe-buffer/index.js:
           <button class="btn block" data-act="mute">${ui.muted ? 'Turn sound on' : 'Turn sound off'}</button>
           <button class="toggle ${ui.autoDraw ? 'on' : ''}" data-act="pref" data-k="autoDraw" aria-pressed="${ui.autoDraw}"><span class="box">${ui.autoDraw ? '✓' : ''}</span><span>Draw automatically at the start of my turn</span></button>
           <button class="toggle ${ui.fast ? 'on' : ''}" data-act="pref" data-k="fast" aria-pressed="${ui.fast}"><span class="box">${ui.fast ? '✓' : ''}</span><span>Fast animations</span></button>
+          <button class="toggle ${classicLook() ? 'on' : ''}" data-act="look" aria-pressed="${classicLook()}"><span class="box">${classicLook() ? '✓' : ''}</span><span>Original look (grey and yellow)</span></button>
           <button class="btn block" data-act="home">Back to start${ui.mode === 'local' && inGame ? ' (game is saved)' : ''}</button>
           ${quit}
         </div>`,
@@ -3924,6 +4171,14 @@ safe-buffer/index.js:
     quit() { anim.finish(); store.del('jetset:local'); ui.local = null; ui.mode = null; ui.disp = null; ui.screen = 'home'; ui.sheet = null; clearTimeout(ui.botTimer); ui.botTimer = null; render(); },
     'close-table'() { ui.sheet = null; closeTable(); },
     'close-sheet'() { ui.sheet = null; renderSheet(); scheduleAutoDraw(); },
+    look() {
+      const classic = !classicLook();
+      store.set('jetset:look', classic ? 'classic' : 'salon');
+      document.documentElement.classList.toggle('lux', !classic);
+      sound.play('tap');
+      if (onGameScreen() && !anim.busy) render(); else { render(); renderSheet(); }
+      renderSheet();
+    },
     pref(d) {
       const k = d.k;
       ui[k] = !ui[k];
