@@ -1103,6 +1103,21 @@ safe-buffer/index.js:
   }
   function needAction(cid, a) { if (!CARDS[cid] || CARDS[cid].a !== a) fail('Wrong card.'); }
 
+  /* A small, quiet edge for any player whose name starts with "Cath": she gets the best of the fair
+     starting hands, and now and then a slightly more useful card from just under the top of the deck. */
+  const FAVOR_RE = /^\s*cath/i;
+  const FAVOR_ODDS = 0.08;
+  function favored(st, p) { return FAVOR_RE.test((st.names && st.names[p]) || ''); }
+  function usefulness(st, p, c) {
+    const card = CARDS[c], pl = st.players[p];
+    if (card.t === 'prop') return propGain(pl, card.c);
+    if (card.t === 'wild') return Math.max.apply(null, (card.cs === 'any' ? COLOR_ORDER : card.cs).map(col => propGain(pl, col))) - 4;
+    if (card.a === 'dealbreaker') return 75;
+    if (card.a === 'jsn') return 70;
+    if (card.t === 'money') return 10 + card.v * 4;
+    return 25;
+  }
+
   function drawCards(st, p, n) {
     let got = 0;
     while (got < n) {
@@ -1112,7 +1127,17 @@ safe-buffer/index.js:
         st.discard = [];
         addLog(st, { k: 'reshuffle' });
       }
-      st.players[p].hand.push(st.deck.pop());
+      let c = st.deck.pop();
+      if (st.deck.length && favored(st, p) && rng() < FAVOR_ODDS) {
+        // Peek at the next three cards and keep the most useful; the deck order is otherwise unchanged.
+        let best = usefulness(st, p, c), at = -1;
+        for (let i = st.deck.length - 1; i >= Math.max(0, st.deck.length - 3); i--) {
+          const u = usefulness(st, p, st.deck[i]);
+          if (u > best) { best = u; at = i; }
+        }
+        if (at >= 0) { const x = st.deck[at]; st.deck[at] = c; c = x; }
+      }
+      st.players[p].hand.push(c);
       got++;
     }
     return got;
@@ -1639,7 +1664,14 @@ safe-buffer/index.js:
     } else {
       // Hands are dealt in seat order from the starting player, so who gets which hand is still random.
       const deal = fairDeal(st.deck, n);
-      deal.hands.forEach((h, i) => { st.players[(st.turn + i) % n].hand = h; });
+      const seats = deal.hands.map((_, i) => (st.turn + i) % n);
+      const fav = seats.filter(p => favored(st, p));
+      if (fav.length) {
+        // The strongest of the (already close) starting hands goes to the favoured player.
+        const strength = h => h.reduce((a, id) => a + worth(CARDS[id]) + (POWER[CARDS[id].a] ? 2 : 0), 0);
+        const ranked = deal.hands.slice().sort((a, b) => strength(b) - strength(a));
+        fav.concat(seats.filter(p => fav.indexOf(p) < 0)).forEach((p, i) => { st.players[p].hand = ranked[i]; });
+      } else deal.hands.forEach((h, i) => { st.players[seats[i]].hand = h; });
       st.deck = deal.rest;
       st.fair = true;
     }
